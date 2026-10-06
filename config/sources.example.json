@@ -1,0 +1,31 @@
+{
+  "_comment": "Examples of the generic adapters. Copy entries into config/sources.json and replace the placeholders with a REAL, verified source before enabling. Never put API keys here: reference an environment variable via apiKey.env.",
+  "lotteryCode": "LAO_DEV",
+  "sources": [
+    {
+      "id": "my-csv-archive",
+      "type": "csv",
+      "enabled": false,
+      "priority": 2,
+      "url": "https://example.invalid/lao-results.csv",
+      "delimiter": ",",
+      "hasHeader": true,
+      "columns": { "date": "date", "result4": "four_digit", "result3": "three_digit", "result2": "two_digit" },
+      "dateFormat": "YYYY-MM-DD",
+      "buddhistEra": false,
+      "expectedWeekdays": [1, 3, 5]
+    },
+    {
+      "id": "my-json-api",
+      "type": "json",
+      "enabled": false,
+      "priority": 3,
+      "url": "https://example.invalid/api/lao/draws",
+      "recordsPath": "data.items",
+      "fields": { "date": "drawDate", "result4": "numbers.last4", "result3": "numbers.last3", "result2": "numbers.last2" },
+      "dateFormat": "YYYY-MM-DD",
+      "apiKey": { "env": "MY_JSON_API_KEY", "header": "Authorization", "prefix": "Bearer " },
+      "expectedWeekdays": [1, 3, 5]
+    }
+  ]
+}

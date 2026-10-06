@@ -1,0 +1,16 @@
+{
+  "lotteryCode": "LAO_DEV",
+  "sources": [
+    {
+      "id": "thelotterytoday",
+      "type": "html-thelotterytoday",
+      "enabled": true,
+      "priority": 1,
+      "description": "The Lottery Today — public HTML result pages for the Lao Development Lottery (draws Mon/Wed/Fri).",
+      "baseUrl": "https://thelotterytoday.com",
+      "listPath": "/en/lottery/lao-lottery",
+      "maxPages": 20,
+      "expectedWeekdays": [1, 3, 5]
+    }
+  ]
+}

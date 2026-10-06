@@ -1,0 +1,125 @@
+// Lao Lottery Statistics — database schema.
+// Columns are snake_case in the DB (draw_date, result_2_digit, ...) and camelCase in code.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum IssueKind {
+  DUPLICATE_IN_SOURCE
+  INVALID_DATE
+  INVALID_NUMBER_FORMAT
+  DERIVED_DIGIT_MISMATCH
+  UNEXPECTED_WEEKDAY
+  FUTURE_DATE
+  MISSING_FIELD
+  SOURCE_CONFLICT
+}
+
+enum IssueSeverity {
+  INFO
+  WARNING
+  ERROR
+}
+
+enum RunStatus {
+  RUNNING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+/// Canonical draw (one per lottery + date). Always traceable to a source URL.
+model Draw {
+  id          Int      @id @default(autoincrement())
+  lotteryCode String   @default("LAO_DEV") @map("lottery_code")
+  drawDate    DateTime @map("draw_date") @db.Date
+  drawId      String   @map("draw_id")
+  /// Digits are kept as strings to preserve leading zeros ("0702").
+  result4     String?  @map("result_4_digit") @db.VarChar(4)
+  result3     String?  @map("result_3_digit") @db.VarChar(3)
+  result2     String   @map("result_2_digit") @db.VarChar(2)
+  /// Canonical (highest-priority) source id.
+  source      String
+  sourceUrl   String   @map("source_url")
+  fetchedAt   DateTime @map("fetched_at") @db.Timestamptz(6)
+  sourceCount Int      @default(1) @map("source_count")
+  hasConflict Boolean  @default(false) @map("has_conflict")
+  /// Free-form source extras (animal, pattana numbers, ...). Keeps the schema flexible.
+  extra       Json?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([lotteryCode, drawDate])
+  @@unique([lotteryCode, drawId])
+  @@index([drawDate])
+  @@map("draws")
+}
+
+/// One observation of a draw as reported by one source (used to detect source conflicts).
+model SourceRecord {
+  id          Int      @id @default(autoincrement())
+  sourceId    String   @map("source_id")
+  lotteryCode String   @default("LAO_DEV") @map("lottery_code")
+  drawDate    DateTime @map("draw_date") @db.Date
+  drawId      String   @map("draw_id")
+  result4     String?  @map("result_4_digit") @db.VarChar(4)
+  result3     String?  @map("result_3_digit") @db.VarChar(3)
+  result2     String   @map("result_2_digit") @db.VarChar(2)
+  sourceUrl   String   @map("source_url")
+  fetchedAt   DateTime @map("fetched_at") @db.Timestamptz(6)
+  rawPayload  Json?    @map("raw_payload")
+
+  @@unique([sourceId, lotteryCode, drawDate])
+  @@index([lotteryCode, drawDate])
+  @@map("source_records")
+}
+
+/// Distinct data-quality finding (de-duplicated by fingerprint across runs).
+model DataIssue {
+  id          Int           @id @default(autoincrement())
+  fingerprint String        @unique
+  kind        IssueKind
+  severity    IssueSeverity
+  sourceId    String        @map("source_id")
+  drawDate    DateTime?     @map("draw_date") @db.Date
+  message     String
+  details     Json?
+  occurrences Int           @default(1)
+  firstSeenAt DateTime      @default(now()) @map("first_seen_at") @db.Timestamptz(6)
+  lastSeenAt  DateTime      @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  lastRunId   Int?          @map("last_run_id")
+
+  @@index([kind])
+  @@index([sourceId])
+  @@map("data_issues")
+}
+
+model IngestionRun {
+  id            Int       @id @default(autoincrement())
+  sourceId      String    @map("source_id")
+  trigger       String    @default("cli")
+  status        RunStatus @default(RUNNING)
+  startedAt     DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt    DateTime? @map("finished_at") @db.Timestamptz(6)
+  pagesFetched  Int       @default(0) @map("pages_fetched")
+  recordsParsed Int       @default(0) @map("records_parsed")
+  recordsValid  Int       @default(0) @map("records_valid")
+  inserted      Int       @default(0)
+  updated       Int       @default(0)
+  unchanged     Int       @default(0)
+  quarantined   Int       @default(0)
+  invalid       Int       @default(0)
+  duplicates    Int       @default(0)
+  conflicts     Int       @default(0)
+  errorCode     String?   @map("error_code")
+  errorMessage  String?   @map("error_message")
+
+  @@index([sourceId, startedAt])
+  @@map("ingestion_runs")
+}
