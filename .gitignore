@@ -8,7 +8,16 @@ dist/
 build/
 .DS_Store
 
-# Next.js / local data
+# Next.js / build
 .next/
+out/
+*.tsbuildinfo
+coverage/
+
+# Local env & data
+.env*
+!.env.example
 .data/
-tsconfig.tsbuildinfo
+.data-local.log
+tmp/
+*.log

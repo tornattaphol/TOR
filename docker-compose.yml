@@ -1,0 +1,26 @@
+# Optional: PostgreSQL for local development when Docker is available.
+# (No Docker? use `npm run db:local`, which starts an embedded PostgreSQL on the same port.)
+#
+#   docker compose up -d
+#   → DATABASE_URL="postgresql://postgres:postgres@localhost:5433/lao_lottery?schema=public"
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}   # local default only — set a real one anywhere else
+      POSTGRES_DB: lao_lottery
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "127.0.0.1:5433:5432"   # bound to localhost only
+    volumes:
+      - lao_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d lao_lottery"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  lao_pgdata:
