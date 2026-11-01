@@ -7,3 +7,17 @@ node_modules/
 dist/
 build/
 .DS_Store
+
+# Next.js / build
+.next/
+out/
+*.tsbuildinfo
+coverage/
+
+# Local env & data
+.env*
+!.env.example
+.data/
+.data-local.log
+tmp/
+*.log
